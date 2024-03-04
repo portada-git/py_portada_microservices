@@ -1,0 +1,11 @@
+setup.py
+portadaMicroservices.egg-info/PKG-INFO
+portadaMicroservices.egg-info/SOURCES.txt
+portadaMicroservices.egg-info/dependency_links.txt
+portadaMicroservices.egg-info/not-zip-safe
+portadaMicroservices.egg-info/requires.txt
+portadaMicroservices.egg-info/top_level.txt
+portada_microservices/client/__init__.py
+portada_microservices/client/api_client.py
+portada_microservices/services/__init__.py
+portada_microservices/services/api_service.py
