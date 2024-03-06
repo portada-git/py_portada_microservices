@@ -5,7 +5,7 @@ import os
 
 def configure_app():
     configp = configparser.ConfigParser()
-    configp.read(os.path.curdir + '/configp/service.cfg')
+    configp.read(os.path.abspath(os.path.curdir + '/config/service.cfg'))
     return configp
 
 
