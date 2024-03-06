@@ -1,4 +1,18 @@
 import requests
+import configparser
+import os
+
+
+def configure_app():
+    configp = configparser.ConfigParser()
+    configp.read('./configp/service.cfg')
+    return configp
+
+
+config = configure_app()
+port = int(os.environ.get('PORT', config['DEFAULT']['port']))
+host = config['DEFAULT']['host']
+url = "http://{}}:{}/stop".format(host, port)
 
 
 def stop_remote_service():
@@ -6,7 +20,7 @@ def stop_remote_service():
     This function stop the service
     :return: None
     """
-    requests.get("http://localhost:5555/stop")
+    requests.get(url)
 
 
 def deskewImageFile(input_path, output_path=''):
@@ -20,7 +34,7 @@ def deskewImageFile(input_path, output_path=''):
     :return: None
     """
     files = {'image': open(input_path, 'rb')}
-    response = requests.post("http://localhost:5555/deskewImageFile", files=files)
+    response = requests.post(url, files=files)
     if response.status_code < 400:
         if len(output_path) == 0:
             output_path = input_path
@@ -29,6 +43,4 @@ def deskewImageFile(input_path, output_path=''):
     elif response.status_code == 404:
         raise RuntimeError("This Microservice is not available")
     else:
-        raise RuntimeError(response.json('error'))
-
-
+        raise RuntimeError("ERROR")
