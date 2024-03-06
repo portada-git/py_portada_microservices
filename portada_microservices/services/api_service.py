@@ -11,7 +11,7 @@ import configparser
 
 def configure_app():
     configp = configparser.ConfigParser()
-    configp.read('./config/service.cfg')
+    configp.read(os.path.curdir + '/configp/service.cfg')
     return configp
 
 config = configure_app()
