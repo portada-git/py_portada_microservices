@@ -1,14 +1,19 @@
-import os
-
+import threading
+from werkzeug.serving import make_server
 from flask import Flask, jsonify, request, send_file
 from flask_reuploads import UploadSet, IMAGES, configure_uploads
 from py_portada_image.deskew_tools import DeskewTool
 from werkzeug.utils import secure_filename
+from portada_microservices.configure_app import configure_app
+import os
 
+
+config = configure_app()
+port = int(os.environ.get('PORT', config['DEFAULT']['port']))
+host = config['DEFAULT']['host']
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
-port = int(os.environ.get('PORT', 5555))
-app.config['UPLOADS_DEFAULT_DEST'] = '../../data/service_host'
+app.config['UPLOADS_DEFAULT_DEST'] = os.path.abspath('./tmp')
 images = UploadSet('images', IMAGES)
 configure_uploads(app, images)
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
@@ -53,11 +58,19 @@ def testAuth(current_user_id):
 
 @app.route("/test", methods=['GET', 'POST'])
 def test():
+    """
+    Test the microservice
+    :return: None
+    """
     return jsonify({'success': True, 'message': 'image-tools service is working'}), 200
 
 
 @app.route("/testUploadImage", methods=['POST'])
 def testUploadImage():
+    """
+    Test microservice uploading images
+    :return: a json with information of the file uploaded
+    """
     # Check the file is an allowed type and store
     try:
         file = request.files['image']
@@ -83,8 +96,14 @@ def testUploadImage():
     }), 201
 
 
-@app.route("/deskewImageFile", methods=['POST'])
+@app.route("/deskewImageFile", methods=['POST', 'PUT'])
 def deskewImageFile():
+    """
+    Deskew the image arrived as file. The process save the file, deskew it if it's necessary and save
+    the image fixed in a file and return it in the response. If some exception is raised, the response
+    will content a json with the error message.
+    :return: the content of the image file deskewed.
+    """
     image_to_process = 'toprocess.'
     # Check the file is an allowed type and store
     try:
@@ -98,9 +117,10 @@ def deskewImageFile():
 
     try:
         extension = filename.rsplit('.', 1)[1].lower()
-        fp = images.config.destination+'/'+image_to_process + extension
+        fp = images.config.destination + '/' + image_to_process + extension
         if os.path.exists(fp):
             os.remove(fp)
+        file.seek(0)
         filename = images.save(file, name=image_to_process)
     except:
         return jsonify({'error': 'Could not store the image'}), 500
@@ -110,7 +130,32 @@ def deskewImageFile():
     deskew_tool.minAngle = 0.5
     deskew_tool.deskewImage()
     deskew_tool.saveImage()
-    return send_file(deskew_tool.image_path, mimetype='image/' + extension)
+    return send_file(images.config.destination + "/" + filename, mimetype='image/' + extension)
+
+
+@app.route('/stop', methods=['GET', 'POST'])
+def stop_service():
+    """
+    Stop the microservice when it was run in a remote server using run_service() function
+    :return:
+    """
+    global vis_service_running
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
+    vis_service_running = False
+    return jsonify({'message': 'Server shutting down...'}), 200
+
+
+def run_service():
+    """
+    Run the service
+    :return:
+    """
+    global vis_service_running
+    if not vis_service_running:
+        app.run(debug=True, host=host, port=port)
 
 
 def allowed_file(filename):
@@ -118,5 +163,59 @@ def allowed_file(filename):
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
+
+
+global vis_service_running
+vis_service_running = False
+
+
+class ServerThread(threading.Thread):
+    def __init__(self, fapp, host, port):
+        threading.Thread.__init__(self)
+        self.server = make_server(host, port, fapp)
+        self.ctx = fapp.app_context()
+        self.ctx.push()
+
+    def run(self):
+        global vis_service_running
+        vis_service_running = True
+        self.server.serve_forever()
+
+    def shutdown(self):
+        global vis_service_running
+        vis_service_running = False
+        self.server.shutdown()
+
+
+def run_local_service():
+    global service
+    global vis_service_running
+    if not vis_service_running:
+        vis_service_running = True
+        # app.run(debug=True, host="0.0.0.0", port=port)
+        service = ServerThread(app, "localhost", port)
+        service.start()
+    return service
+
+
+def stop_local_service():
+    global vis_service_running
+    global service
+    if vis_service_running:
+        service.shutdown()
+
+
+def is_local_service_running():
+    global vis_service_running
+    return vis_service_running
+
+
+global service
+
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=port)
+    run_service()

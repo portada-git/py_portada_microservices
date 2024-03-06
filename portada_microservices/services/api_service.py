@@ -7,12 +7,13 @@ from werkzeug.utils import secure_filename
 from portada_microservices.configure_app import configure_app
 import os
 
+
 config = configure_app()
 port = int(os.environ.get('PORT', config['DEFAULT']['port']))
 host = config['DEFAULT']['host']
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
-app.config['UPLOADS_DEFAULT_DEST'] = './tmp'
+app.config['UPLOADS_DEFAULT_DEST'] = os.path.abspath('./tmp')
 images = UploadSet('images', IMAGES)
 configure_uploads(app, images)
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
@@ -129,7 +130,7 @@ def deskewImageFile():
     deskew_tool.minAngle = 0.5
     deskew_tool.deskewImage()
     deskew_tool.saveImage()
-    return send_file(deskew_tool.image_path, mimetype='image/' + extension)
+    return send_file(images.config.destination + "/" + filename, mimetype='image/' + extension)
 
 
 @app.route('/stop', methods=['GET', 'POST'])
