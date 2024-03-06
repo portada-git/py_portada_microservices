@@ -1,13 +1,14 @@
 from setuptools import setup
 
 setup(name='portadaMicroservices',
-    version='0.1.3',
+    version='0.1.4',
     description='microservices for PortADa project',
     author='PortADa team',
     author_email='jcbportada@gmail.com',
     license='MIT',
     url="https://github.com/portada-git/py_portada_microservices",
     packages=['portada_microservices.services', 'portada_microservices.client'],
+    py_modules=['configure_app'],
     install_requires=[
 	'flask',
 	'requests',

@@ -4,11 +4,11 @@ from flask import Flask, jsonify, request, send_file
 from flask_reuploads import UploadSet, IMAGES, configure_uploads
 from py_portada_image.deskew_tools import DeskewTool
 from werkzeug.utils import secure_filename
-from portada_microservices import configure_app
+from portada_microservices.configure_app import configure_app
 import os
 
 
-config = configure_app.configure_app()
+config = configure_app()
 port = int(os.environ.get('PORT', config['DEFAULT']['port']))
 host = config['DEFAULT']['host']
 app = Flask(__name__)
