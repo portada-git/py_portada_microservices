@@ -13,3 +13,4 @@ Requires-Dist: pyjwt
 Requires-Dist: flask-reuploads
 Requires-Dist: py_portada_image@ git+https://github.com/portada-git/py_portada_image#egg=py_portada_image
 Requires-Dist: werkzeug
+Requires-Dist: configparser

@@ -15,6 +15,7 @@ setup(name='portadaMicroservices',
 	'flask-reuploads',
 	'py_portada_image @ git+https://github.com/portada-git/py_portada_image#egg=py_portada_image',
 	'werkzeug',
+	'configparser',
     ],
     python_requires='>=3.9',
     zip_safe=False)
