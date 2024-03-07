@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='portadaMicroservices',
-    version='0.1.8',
+    version='0.1.9',
     description='microservices for PortADa project',
     author='PortADa team',
     author_email='jcbportada@gmail.com',
