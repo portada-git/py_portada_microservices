@@ -162,6 +162,7 @@ def run_service():
     global vis_service_running
     if not vis_service_running:
         app.run(debug=True, host=host, port=port)
+    return app
 
 
 def allowed_file(filename):
