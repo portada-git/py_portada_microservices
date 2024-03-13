@@ -154,6 +154,9 @@ def stop_service():
     return jsonify({'message': 'Server shutting down...'}), 200
 
 
+def getApplication():
+    return app
+
 def run_service():
     """
     Run the service

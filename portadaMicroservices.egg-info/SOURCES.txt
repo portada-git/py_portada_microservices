@@ -1,3 +1,4 @@
+pyproject.toml
 setup.py
 portadaMicroservices.egg-info/PKG-INFO
 portadaMicroservices.egg-info/SOURCES.txt

@@ -4,7 +4,7 @@ import os
 
 
 def configure_app():
-    p = os.path.abspath(os.path.curdir + '/config/service.cfg')
+    p = os.path.abspath(os.getcwd() + '/config/service.cfg')
     print(p)
     configp = configparser.ConfigParser()
     configp.read(p)
@@ -14,7 +14,7 @@ def configure_app():
 config = configure_app()
 port = int(os.environ.get('PORT', config['DEFAULT']['port']))
 host = config['DEFAULT']['host']
-url = "http://{}}:{}/stop".format(host, port)
+url = "http://{}:{}/stop".format(host, port)
 
 
 def stop_remote_service():

@@ -1,7 +1,7 @@
 import configparser
 
 
-def configure_app():
+def configure_app(cfg_name):
     config = configparser.ConfigParser()
-    config.read('../config/service.cfg')
+    config.read(cfg_name)
     return config

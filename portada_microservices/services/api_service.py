@@ -10,13 +10,13 @@ import configparser
 
 def configure_app():
     configp = configparser.ConfigParser()
-    configp.read(os.path.abspath(os.path.curdir + '/config/service.cfg'))
+    configp.read(os.path.abspath(os.getcwd() + '/config/service.cfg'))
     return configp
 
 
 config = configure_app()
 port = int(os.environ.get('PORT', config['DEFAULT']['port']))
-host = config['DEFAULT']['host']
+host = '0.0.0.0'  #config['DEFAULT']['host']
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['UPLOADS_DEFAULT_DEST'] = os.path.abspath('./tmp')
@@ -153,6 +153,9 @@ def stop_service():
     vis_service_running = False
     return jsonify({'message': 'Server shutting down...'}), 200
 
+
+def getApplication():
+    return app
 
 def run_service():
     """
