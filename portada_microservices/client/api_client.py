@@ -1,31 +1,30 @@
 import requests
-import configparser
-import os
 
 
-def configure_app():
-    p = os.path.abspath(os.getcwd() + '/config/service.cfg')
-    print(p)
-    configp = configparser.ConfigParser()
-    configp.read(p)
-    return configp
+class RequestConfig(object):
+    def __init__(self):
+        self.__url = "http://localhost/"
+
+    @property
+    def url(self):
+        return self.__url
+
+    @url.setter
+    def url(self, v):
+        self.__url = v
 
 
-config = configure_app()
-port = int(os.environ.get('PORT', config['DEFAULT']['port']))
-host = config['DEFAULT']['host']
-url = "http://{}:{}/stop".format(host, port)
+config = RequestConfig()
 
 
-def stop_remote_service():
-    """
-    This function stop the service
-    :return: None
-    """
-    requests.get(url)
+def request_configure(host, port, pref=''):
+    if len(pref) > 0 and pref[-1] != '/':
+        pref = pref + "/"
+    url = "http://{}:{}/{}".format(host, port, pref)
+    config.url = url
 
 
-def deskewImageFile(input_path, output_path=''):
+def deskew_image_file(input_path, output_path=''):
     """
     This function read the image file passed as the first parameter,
     deskew the image and save the fixed image in output_path if it is
@@ -35,8 +34,9 @@ def deskewImageFile(input_path, output_path=''):
     output_path = input_path
     :return: None
     """
+    deskew_url = "{}{}".format(config.url, "deskewImageFile")
     files = {'image': open(input_path, 'rb')}
-    response = requests.post(url, files=files)
+    response = requests.post(deskew_url, files=files)
     if response.status_code < 400:
         if len(output_path) == 0:
             output_path = input_path

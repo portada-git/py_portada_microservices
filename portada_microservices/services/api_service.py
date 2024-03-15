@@ -1,22 +1,10 @@
-import threading
-from werkzeug.serving import make_server
 from flask import Flask, jsonify, request, send_file
 from flask_reuploads import UploadSet, IMAGES, configure_uploads
 from py_portada_image.deskew_tools import DeskewTool
 from werkzeug.utils import secure_filename
 import os
-import configparser
 
 
-def configure_app():
-    configp = configparser.ConfigParser()
-    configp.read(os.path.abspath(os.getcwd() + '/config/service.cfg'))
-    return configp
-
-
-config = configure_app()
-port = int(os.environ.get('PORT', config['DEFAULT']['port']))
-host = '0.0.0.0'  #config['DEFAULT']['host']
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['UPLOADS_DEFAULT_DEST'] = os.path.abspath('./tmp')
@@ -139,93 +127,45 @@ def deskewImageFile():
     return send_file(images.config.destination + "/" + filename, mimetype='image/' + extension)
 
 
-@app.route('/stop', methods=['GET', 'POST'])
-def stop_service():
-    """
-    Stop the microservice when it was run in a remote server using run_service() function
-    :return:
-    """
-    global vis_service_running
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
-    vis_service_running = False
-    return jsonify({'message': 'Server shutting down...'}), 200
+# @app.route('/stop', methods=['POST'])
+# def stop_service():
+#     """
+#     Stop the microservice when it was run in a remote server using run_service() function
+#     :return:
+#     """
+#     func = request.environ.get('werkzeug.server.shutdown')
+#     if func is None:
+#         raise RuntimeError('Not running with the Werkzeug Server')
+#     func()
+#     return jsonify({'message': 'Server shutting down...'}), 200
 
 
 def getApplication():
+    """
+    get the application object of Flask configured but not running
+    :return:  the application object of Flask
+    """
     return app
 
-def run_service():
+
+def run_service(port=None):
     """
     Run the service
     :return:
     """
-    global vis_service_running
-    if not vis_service_running:
-        app.run(debug=True, host=host, port=port)
+    if port is not None:
+        if type(port) is str:
+            p = int(port)
+        else:
+            p =port
+    else:
+        p = 5555
+
+    host = '0.0.0.0'  # config['DEFAULT']['host']
+    app.run(debug=True, host=host, port=p)
     return app
 
 
 def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def shutdown_server():
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
-
-
-global vis_service_running
-vis_service_running = False
-
-
-class ServerThread(threading.Thread):
-    def __init__(self, fapp, host, port):
-        threading.Thread.__init__(self)
-        self.server = make_server(host, port, fapp)
-        self.ctx = fapp.app_context()
-        self.ctx.push()
-
-    def run(self):
-        global vis_service_running
-        vis_service_running = True
-        self.server.serve_forever()
-
-    def shutdown(self):
-        global vis_service_running
-        vis_service_running = False
-        self.server.shutdown()
-
-
-def run_local_service():
-    global service
-    global vis_service_running
-    if not vis_service_running:
-        vis_service_running = True
-        # app.run(debug=True, host="0.0.0.0", port=port)
-        service = ServerThread(app, "localhost", port)
-        service.start()
-    return service
-
-
-def stop_local_service():
-    global vis_service_running
-    global service
-    if vis_service_running:
-        service.shutdown()
-
-
-def is_local_service_running():
-    global vis_service_running
-    return vis_service_running
-
-
-global service
-
-if __name__ == "__main__":
-    run_service()

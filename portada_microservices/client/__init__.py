@@ -1,1 +1,1 @@
-from .api_client import deskewImageFile, stop_remote_service
+from .api_client import deskew_image_file, request_configure

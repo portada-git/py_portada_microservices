@@ -1,7 +1,0 @@
-from portada_microservices.client.api_client import deskewImageFile as cliDeskewImageFile
-from portada_microservices.services.api_service import deskewImageFile as serDeskewImageFile
-from portada_microservices.services.api_service import run_local_service
-from portada_microservices.services.api_service import is_local_service_running
-from portada_microservices.services.api_service import stop_local_service
-from portada_microservices.client.api_client import stop_remote_service
-from portada_microservices.services.api_service import configure_app
