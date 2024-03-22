@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, send_file
 from flask_reuploads import UploadSet, IMAGES, configure_uploads
 from py_portada_image.deskew_tools import DeskewTool
+from py_portada_image.dewarp_tools import DewarpTools
 from werkzeug.utils import secure_filename
 import os
 
@@ -65,66 +66,49 @@ def testUploadImage():
     Test microservice uploading images
     :return: a json with information of the file uploaded
     """
-    # Check the file is an allowed type and store
-    try:
-        file = request.files['image']
-        filename = secure_filename(file.filename)
-    except:
-        return jsonify({'error': 'No image found with the \'image\' key'}), 400
-
-    if not allowed_file(filename):
-        return jsonify({'error': 'This file type is not allowed'}), 400
-
-    try:
-        extension = filename.rsplit('.', 1)[1].lower()
-        fp = images.config.destination + '/uploaded.' + extension
-        if os.path.exists(fp):
-            os.remove(fp)
-        filename = images.save(file, name='uploaded.')
-    except:
-        return jsonify({'error': 'Could not store the image'}), 500
+    message, extension, status = __save_uploaded_file()
+    if status >= 400:
+        return message, status
 
     return jsonify({
         "image_id": 'uploaded',
-        "filename": filename
+        "filename": message
     }), 201
 
+@app.route("/dewrapImageFile", methods=['POST', 'PUT'])
+def dewrap_image_file():
+    message, extension, status = __save_uploaded_file()
+    if status < 400:
+        filename = message
+    else:
+        return message, status
+
+    tool = DewarpTools ()
+    tool.image_path = filename
+    tool.dewarp_image()
+    tool.save_image()
+    return send_file(filename, mimetype='image/' + extension)
 
 @app.route("/deskewImageFile", methods=['POST', 'PUT'])
-def deskewImageFile():
+def deskew_image_file():
     """
     Deskew the image arrived as file. The process save the file, deskew it if it's necessary and save
     the image fixed in a file and return it in the response. If some exception is raised, the response
     will content a json with the error message.
     :return: the content of the image file deskewed.
     """
-    image_to_process = 'toprocess.'
-    # Check the file is an allowed type and store
-    try:
-        file = request.files['image']
-        filename = secure_filename(file.filename)
-    except:
-        return jsonify({'error': 'No image found with the \'image\' key'}), 400
+    message, extension, status = __save_uploaded_file()
+    if status < 400:
+        filename = message
+    else:
+        return message, status
 
-    if not allowed_file(file.filename):
-        return jsonify({'error': 'This file type is not allowed'}), 400
-
-    try:
-        extension = filename.rsplit('.', 1)[1].lower()
-        fp = images.config.destination + '/' + image_to_process + extension
-        if os.path.exists(fp):
-            os.remove(fp)
-        file.seek(0)
-        filename = images.save(file, name=image_to_process)
-    except:
-        return jsonify({'error': 'Could not store the image'}), 500
-
-    deskew_tool = DeskewTool()
-    deskew_tool.image_path = images.config.destination + "/" + filename
-    deskew_tool.minAngle = 0.5
-    deskew_tool.deskewImage()
-    deskew_tool.saveImage()
-    return send_file(images.config.destination + "/" + filename, mimetype='image/' + extension)
+    tool = DeskewTool()
+    tool.image_path = filename
+    tool.min_angle = 0.1
+    tool.deskew_image()
+    tool.save_image()
+    return send_file(filename, mimetype='image/' + extension)
 
 
 # @app.route('/stop', methods=['POST'])
@@ -140,7 +124,7 @@ def deskewImageFile():
 #     return jsonify({'message': 'Server shutting down...'}), 200
 
 
-def getApplication():
+def get_application():
     """
     get the application object of Flask configured but not running
     :return:  the application object of Flask
@@ -169,3 +153,28 @@ def run_service(port=None):
 def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def __save_uploaded_file():
+    image_to_process = 'toprocess.'
+    # Check the file is an allowed type and store
+    try:
+        file = request.files['image']
+        filename = secure_filename(file.filename)
+    except:
+        return jsonify({'error': 'No image found with the \'image\' key'}), 'error', 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'This file type is not allowed'}), 'error', 400
+
+    try:
+        extension = filename.rsplit('.', 1)[1].lower()
+        fp = images.config.destination + '/' + image_to_process + extension
+        if os.path.exists(fp):
+            os.remove(fp)
+        file.seek(0)
+        filename = images.save(file, name=image_to_process)
+    except:
+        return jsonify({'error': 'Could not store the image'}), 'error', 500
+
+    return images.config.destination + "/" + filename, extension, 200
