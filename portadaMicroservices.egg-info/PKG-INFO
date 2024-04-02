@@ -1,16 +1,9 @@
 Metadata-Version: 2.1
 Name: portadaMicroservices
-Version: 0.1.12
+Version: 0.1.13
 Summary: microservices for PortADa project
 Home-page: https://github.com/portada-git/py_portada_microservices
 Author: PortADa team
 Author-email: jcbportada@gmail.com
 License: MIT
 Requires-Python: >=3.9
-Requires-Dist: flask
-Requires-Dist: requests
-Requires-Dist: pyjwt
-Requires-Dist: flask-reuploads
-Requires-Dist: py_portada_image@ git+https://github.com/portada-git/py_portada_image#egg=py_portada_image
-Requires-Dist: werkzeug
-Requires-Dist: configparser

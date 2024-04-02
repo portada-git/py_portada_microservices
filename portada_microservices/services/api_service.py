@@ -75,8 +75,8 @@ def testUploadImage():
         "filename": message
     }), 201
 
-@app.route("/dewrapImageFile", methods=['POST', 'PUT'])
-def dewrap_image_file():
+@app.route("/dewarpImageFile", methods=['POST', 'PUT'])
+def dewarp_image_file():
     message, extension, status = __save_uploaded_file()
     if status < 400:
         filename = message

@@ -34,7 +34,7 @@ def dewrap_image_file(input_path, output_path=''):
     output_path = input_path
     :return: None
     """
-    tool_url = "{}{}".format(config.url, "dewrapImageFile")
+    tool_url = "{}{}".format(config.url, "dewarpImageFile")
     files = {'image': open(input_path, 'rb')}
     response = requests.post(tool_url, files=files)
     if response.status_code < 400:
