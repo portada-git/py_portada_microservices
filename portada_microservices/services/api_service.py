@@ -1,9 +1,13 @@
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, after_this_request
 from flask_reuploads import UploadSet, IMAGES, configure_uploads
+from numpy.distutils.command.config import config
 from py_portada_image.deskew_tools import DeskewTool
 from py_portada_image.dewarp_tools import DewarpTools
 from werkzeug.utils import secure_filename
 import os
+from py_portada_order_blocks import PortadaRedrawImageForOcr
+import json
+import uuid
 
 
 app = Flask(__name__)
@@ -70,6 +74,11 @@ def testUploadImage():
     if status >= 400:
         return message, status
 
+    @after_this_request
+    def remove_file(response):
+        __remove_file(message)
+        return response
+
     return jsonify({
         "image_id": 'uploaded',
         "filename": message
@@ -83,10 +92,16 @@ def dewarp_image_file():
     else:
         return message, status
 
-    tool = DewarpTools ()
+    tool = DewarpTools()
     tool.image_path = filename
     tool.dewarp_image()
     tool.save_image()
+
+    @after_this_request
+    def remove_file(response):
+        __remove_file(filename)
+        return response
+
     return send_file(filename, mimetype='image/' + extension)
 
 @app.route("/deskewImageFile", methods=['POST', 'PUT'])
@@ -108,7 +123,41 @@ def deskew_image_file():
     tool.min_angle = 0.1
     tool.deskew_image()
     tool.save_image()
+
+    @after_this_request
+    def remove_file(response):
+        __remove_file(filename)
+        return response
+
     return send_file(filename, mimetype='image/' + extension)
+
+
+@app.route("/redrawOrderedImageFile", methods=['POST', 'PUT'])
+def redraw_ordered_image_file():
+    message, extension, status = __save_uploaded_file()
+    if status < 400:
+        filename = message
+    else:
+        return message, status
+
+    team = request.form.get("team")
+
+    with open("/etc/.py_portada_microservices/"+team+"/config.json") as f:
+        config_json = json.load(f)
+
+    tool = PortadaRedrawImageForOcr()
+    tool.image_path = filename
+    tool.config = config_json
+    tool.process_image()
+    tool.save_image()
+
+    @after_this_request
+    def remove_file(response):
+        __remove_file(filename)
+        return response
+
+    return send_file(filename, mimetype='image/' + extension)
+
 
 
 # @app.route('/stop', methods=['POST'])
@@ -141,7 +190,7 @@ def run_service(port=None):
         if type(port) is str:
             p = int(port)
         else:
-            p =port
+            p = port
     else:
         p = 5555
 
@@ -156,12 +205,13 @@ def allowed_file(filename):
 
 
 def __save_uploaded_file():
-    image_to_process = 'toprocess.'
+    image_to_process = str(uuid.uuid4())+"."
+#    image_to_process = 'toprocess.'
     # Check the file is an allowed type and store
     try:
         file = request.files['image']
         filename = secure_filename(file.filename)
-    except:
+    except Exception as e:
         return jsonify({'error': 'No image found with the \'image\' key'}), 'error', 400
 
     if not allowed_file(file.filename):
@@ -174,7 +224,14 @@ def __save_uploaded_file():
             os.remove(fp)
         file.seek(0)
         filename = images.save(file, name=image_to_process)
-    except:
+    except Exception as e:
         return jsonify({'error': 'Could not store the image'}), 'error', 500
 
     return images.config.destination + "/" + filename, extension, 200
+
+
+def __remove_file(filepath: str):
+    try:
+        os.remove(filepath)
+    except Exception as e:
+        app.logger.error(f'Error removing or closing downloaded file handle: {e}')

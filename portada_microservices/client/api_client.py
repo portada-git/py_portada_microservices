@@ -1,4 +1,9 @@
+from os import terminal_size
+
 import requests
+import os
+
+from cv2.gapi.ie import params
 
 
 class RequestConfig(object):
@@ -70,3 +75,22 @@ def deskew_image_file(input_path, output_path=''):
         raise RuntimeError("This Microservice is not available")
     else:
         raise RuntimeError("ERROR")
+
+
+def redraw_ordered_image(team:str, input_path:str, output_path=''):
+    redraw_url = "{}{}".format(config.url, "redrawOrderedImageFile")
+    params = {
+        'team': team
+    }
+    files = {'image': open(input_path, 'rb')}
+    response = requests.post(redraw_url, data=params, files=files)
+    if response.status_code < 400:
+        if len(output_path) == 0:
+            output_path = input_path
+        with open(output_path, "wb") as f:
+            f.write(response.content)
+    elif response.status_code == 404:
+        raise RuntimeError("This Microservice is not available")
+    else:
+        raise RuntimeError("ERROR")
+
