@@ -1,4 +1,8 @@
-from flask import Flask, jsonify, request, send_file, after_this_request
+import base64
+from functools import wraps
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from flask import Flask, jsonify, request, send_file, after_this_request, session
 from flask_reuploads import UploadSet, IMAGES, configure_uploads
 from numpy.distutils.command.config import config
 from py_portada_image.deskew_tools import DeskewTool
@@ -8,6 +12,48 @@ import os
 from py_portada_order_blocks import PortadaRedrawImageForOcr
 import json
 import uuid
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+
+
+def __add_public_key(team, public_key):
+    if team not in pkt:
+        pkt[team] = []
+
+    pkt[team].append(public_key)
+
+
+def __init():
+    global init_properties
+
+    init_properties = dict(
+        line.strip().split('=') for line in open('/etc/.portada_microservices/papi_access.properties'))
+    public_key_base_path = init_properties["publicKeyBasePath"]
+    public_key_dir_name = init_properties["publicKeydirName"]
+    teams = init_properties["teams"].split(",")
+    for team in teams:
+        public_key_dir_path = public_key_base_path + "/" + team + "/" + public_key_dir_name
+        if os.path.exists(public_key_dir_path) and os.path.isdir(public_key_dir_path):
+            for publickey_file in os.listdir(public_key_dir_path):
+                with open(public_key_dir_path+"/"+publickey_file, 'rb') as pem_file:
+                    __add_public_key(team, load_pem_public_key(pem_file.read(), backend=default_backend()))
+
+
+def reloat_team_keys(team):
+    global init_properties
+
+    # Carrega totes les claus públiques d'un equip determinat
+    if init_properties is None:
+        init_properties = dict(
+            line.strip().split('=') for line in open('/etc/.portada_microservices/papi_access.properties'))
+    public_key_base_path = init_properties["publicKeyBasePath"]
+    public_key_dir_name = init_properties["publicKeydirName"]
+    public_key_dir_path = public_key_base_path + "/" + team + "/" + public_key_dir_name
+    if os.path.exists(public_key_dir_path) and os.path.isdir(public_key_dir_path):
+        pkt[team] = []
+        for publickey_file in os.listdir(public_key_base_path + "/" + team + "/" + public_key_dir_name):
+            with open(publickey_file, 'rb') as pem_file:
+                __add_public_key(team, pem_file.read())
 
 
 app = Flask(__name__)
@@ -16,6 +62,9 @@ app.config['UPLOADS_DEFAULT_DEST'] = os.path.abspath('./tmp')
 images = UploadSet('images', IMAGES)
 configure_uploads(app, images)
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
+init_properties = None
+pkt = dict()
+__init()
 
 """
 def token_required(f):
@@ -55,13 +104,59 @@ def testAuth(current_user_id):
 """
 
 
+def __verify_signature_for_team(signature_bytes, data, team):
+    verified = False
+
+    for public_key in pkt[team]:
+        if not verified:
+            try:
+                public_key.verify(
+                    signature_bytes,  # La signatura enviada pel client
+                    data,  # Les dades que han estat signades
+                    padding.PKCS1v15(),  # Tipus de padding (PKCS1v15 en aquest cas)
+                    hashes.SHA256()  # Algorisme de hash (ha de coincidir amb el de la signatura)
+                )
+                verified = True
+            except Exception as e:
+                verified = False
+
+    return verified
+
+
+def verify_signature(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        # Obtenir la signatura de la capçalera HTTP
+        signature = request.headers.get('X-Signature')
+        if signature is None:
+            team = request.values['team']
+            challenge = init_properties['papicli_access_signature_data']
+            session['challenge'] = challenge
+            return jsonify({"error": "Missing signature", "challenge": challenge}), 401
+
+        # Decodificar la signatura en base64
+        try:
+            signature_bytes = base64.b64decode(signature)
+        except Exception as e:
+            return jsonify({"error": "Invalid signature format"}), 400
+
+        # Verificar la signatura amb la clau pública
+        if __verify_signature_for_team(signature_bytes,  session['challenge'].encode('utf-8'), request.values['team']):
+            # Si la verificació és correcte, continuem
+            return f(*args, **kwargs)
+        else:
+            return jsonify({"error": "forbidden resource"}), 403
+
+    return decorated
+
+
 @app.route("/test", methods=['GET', 'POST'])
 def test():
     """
     Test the microservice
     :return: None
     """
-    return jsonify({'success': True, 'message': 'image-tools service is working'}), 200
+    return jsonify({'success': True, 'message': 'python test service is working'}), 200
 
 
 @app.route("/testUploadImage", methods=['POST'])
@@ -84,6 +179,7 @@ def testUploadImage():
         "filename": message
     }), 201
 
+
 @app.route("/dewarpImageFile", methods=['POST', 'PUT'])
 def dewarp_image_file():
     message, extension, status = __save_uploaded_file()
@@ -103,6 +199,7 @@ def dewarp_image_file():
         return response
 
     return send_file(filename, mimetype='image/' + extension)
+
 
 @app.route("/deskewImageFile", methods=['POST', 'PUT'])
 def deskew_image_file():
@@ -132,7 +229,8 @@ def deskew_image_file():
     return send_file(filename, mimetype='image/' + extension)
 
 
-@app.route("/redrawOrderedImageFile", methods=['POST', 'PUT'])
+@app.route("/pr/redrawOrderedImageFile", methods=['POST', 'PUT'])
+@verify_signature
 def redraw_ordered_image_file():
     message, extension, status = __save_uploaded_file()
     if status < 400:
@@ -142,7 +240,7 @@ def redraw_ordered_image_file():
 
     team = request.form.get("team")
 
-    with open("/etc/.py_portada_microservices/"+team+"/config.json") as f:
+    with open("/etc/.py_portada_microservices/" + team + "/config.json") as f:
         config_json = json.load(f)
 
     tool = PortadaRedrawImageForOcr()
@@ -157,7 +255,6 @@ def redraw_ordered_image_file():
         return response
 
     return send_file(filename, mimetype='image/' + extension)
-
 
 
 # @app.route('/stop', methods=['POST'])
@@ -205,8 +302,8 @@ def allowed_file(filename):
 
 
 def __save_uploaded_file():
-    image_to_process = str(uuid.uuid4())+"."
-#    image_to_process = 'toprocess.'
+    image_to_process = str(uuid.uuid4()) + "."
+    #    image_to_process = 'toprocess.'
     # Check the file is an allowed type and store
     try:
         file = request.files['image']
