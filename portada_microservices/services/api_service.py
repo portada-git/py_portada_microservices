@@ -240,7 +240,7 @@ def redraw_ordered_image_file():
 
     team = request.form.get("team")
 
-    with open("/etc/.py_portada_microservices/" + team + "/config.json") as f:
+    with open("/etc/.portada_microservices/" + team + "/arc_config.json") as f:
         config_json = json.load(f)
 
     tool = PortadaRedrawImageForOcr()
