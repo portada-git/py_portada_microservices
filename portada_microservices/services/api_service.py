@@ -131,7 +131,6 @@ def verify_signature(f):
         if signature is None:
             team = request.values['team']
             challenge = init_properties['papicli_access_signature_data']
-            session['challenge'] = challenge
             return jsonify({"error": "Missing signature", "challenge": challenge}), 401
 
         # Decodificar la signatura en base64
@@ -141,7 +140,8 @@ def verify_signature(f):
             return jsonify({"error": "Invalid signature format"}), 400
 
         # Verificar la signatura amb la clau pública
-        if __verify_signature_for_team(signature_bytes,  session['challenge'].encode('utf-8'), request.values['team']):
+        challenge =  init_properties['papicli_access_signature_data']
+        if __verify_signature_for_team(signature_bytes,  challenge.encode('utf-8'), request.values['team']):
             # Si la verificació és correcte, continuem
             return f(*args, **kwargs)
         else:
