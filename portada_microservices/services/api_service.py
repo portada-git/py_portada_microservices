@@ -247,14 +247,18 @@ def redraw_ordered_image_file():
     tool.image_path = filename
     tool.config = config_json
     tool.process_image()
-    tool.save_image()
 
     @after_this_request
     def remove_file(response):
         __remove_file(filename)
         return response
 
-    return send_file(filename, mimetype='image/' + extension)
+#    return send_file(filename, mimetype='image/' + extension)
+    ret = []
+    for ib in tool.image_blocks:
+        ret.append(dict(file_name=ib["file_name"], extension=ib["extension"], count=ib["count"],
+                        image=base64.b64encode(ib["image"]).decode('utf-8')))
+    return jsonify({'status': 0, 'message': 'image blocks generated', 'images': ret})
 
 
 # @app.route('/stop', methods=['POST'])
