@@ -7,3 +7,4 @@ werkzeug
 configparser
 py_portada_order_blocks@ git+https://github.com/portada-git/py_order_text_blocks#egg=py_portada_order_blocks
 cryptography
+py_portada_paragraphs@ git+https://github.com/portada-git/py_portada_paragraphs#egg=py_portada_paragraphs

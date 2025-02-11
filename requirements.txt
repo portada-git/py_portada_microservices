@@ -6,3 +6,4 @@ py_portada_image @ git+https://github.com/portada-git/py_portada_image#egg=py_po
 configparser
 py_portada_order_blocks @ git+https://github.com/portada-git/py_order_text_blocks#egg=py_portada_order_blocks
 cryptography~=42.0.7
+py_portada_paragraphs @ git+https://github.com/portada-git/py_portada_paragraphs#egg=py_portada_paragraphs

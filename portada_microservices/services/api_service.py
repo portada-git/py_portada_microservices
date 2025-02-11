@@ -1,5 +1,8 @@
 import base64
 from functools import wraps
+from pathlib import Path
+
+import cv2
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from flask import Flask, jsonify, request, send_file, after_this_request, session
@@ -9,6 +12,7 @@ from py_portada_image.deskew_tools import DeskewTool
 from py_portada_image.dewarp_tools import DewarpTools
 from werkzeug.utils import secure_filename
 import os
+from py_portada_paragraphs import PortadaParagraphCutter
 from py_portada_order_blocks import PortadaRedrawImageForOcr
 import json
 import uuid
@@ -227,6 +231,67 @@ def deskew_image_file():
         return response
 
     return send_file(filename, mimetype='image/' + extension)
+
+@app.route("/testParagraphImageFile", methods=['POST', 'PUT'])
+def test_paragraph_image_file():
+    message, extension, status = __save_uploaded_file()
+    if status < 400:
+        filename = message
+    else:
+        return message, status
+
+    with open("/etc/.portada_microservices/yolo_config.json") as f:
+        config_json = json.load(f)
+
+    tool = PortadaParagraphCutter(layout_model_path=config_json['column_model_path'], paragraph_model_path=config_json['para_model_path'])
+    tool.image_path = filename
+    tool.config = config_json
+    col_boxes = tool.get_columns()
+    annotated_image = PortadaParagraphCutter.draw_annotated_image_by_boxes(col_boxes, tool.image)
+
+    file_name = Path(tool.image_path).stem
+    ext = Path(tool.image_path).suffix
+    if len(ext) == 0:
+        ext = ".jpg"
+
+    @after_this_request
+    def remove_file(response):
+        __remove_file(filename)
+        return response
+
+    #    return send_file(filename, mimetype='image/' + extension)
+    jpg_image = cv2.imencode(ext, annotated_image)[1]
+    ret = [(dict(file_name=file_name, extension=ext, count="1" ,image=base64.b64encode(jpg_image).decode('utf-8')))]
+    return jsonify({'status': 0, 'message': 'annotated image generated', 'images': ret})
+
+
+@app.route("/redrawParagraphImageFile", methods=['POST', 'PUT'])
+def redraw_paragraph_image_file():
+    message, extension, status = __save_uploaded_file()
+    if status < 400:
+        filename = message
+    else:
+        return message, status
+
+    with open("/etc/.portada_microservices/yolo_config.json") as f:
+        config_json = json.load(f)
+
+    tool = PortadaParagraphCutter(layout_model_path=config_json['column_model_path'], paragraph_model_path=config_json['para_model_path'])
+    tool.image_path = filename
+    tool.config = config_json
+    tool.process_image()
+
+    @after_this_request
+    def remove_file(response):
+        __remove_file(filename)
+        return response
+
+    #    return send_file(filename, mimetype='image/' + extension)
+    ret = []
+    for ib in tool.image_blocks:
+        ret.append(dict(file_name=ib["file_name"], extension=ib["extension"], count=ib["count"],
+                        image=base64.b64encode(ib["image"]).decode('utf-8')))
+    return jsonify({'status': 0, 'message': 'image blocks generated', 'images': ret})
 
 
 @app.route("/pr/redrawOrderedImageFile", methods=['POST', 'PUT'])

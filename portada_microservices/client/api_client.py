@@ -1,3 +1,4 @@
+import base64
 from os import terminal_size
 
 import requests
@@ -87,10 +88,28 @@ def redraw_ordered_image(team:str, input_path:str, output_path=''):
     if response.status_code < 400:
         if len(output_path) == 0:
             output_path = input_path
+        imgdata = base64.b64decode(response.json()['response']['image'])
+        with open(output_path, "wb") as f:
+            f.write(imgdata)
+    elif response.status_code == 404:
+        raise RuntimeError("This Microservice is not available")
+    else:
+        raise RuntimeError("ERROR")
+
+
+def test_yolo_paragraph_process(input_path:str, output_path=''):
+    redraw_url = "{}{}".format(config.url, "testParagraphImageFile")
+    files = {'image': open(input_path, 'rb')}
+    response = requests.post(redraw_url, files=files)
+    if response.status_code < 400:
+        if len(output_path) == 0:
+            output_path = input_path
+        imgdata = base64.b64decode(response.json()['response']['image'])
+        with open(output_path, "wb") as f:
+            f.write(imgdata)
         with open(output_path, "wb") as f:
             f.write(response.content)
     elif response.status_code == 404:
         raise RuntimeError("This Microservice is not available")
     else:
         raise RuntimeError("ERROR")
-
