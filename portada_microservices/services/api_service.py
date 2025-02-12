@@ -262,7 +262,7 @@ def test_paragraph_image_file():
         if len(ext) == 0:
             ext = ".jpg"
     except Exception as e:
-        return jsonify({'status': -2, 'message': str(e), 'error': True})
+        return jsonify({'status': -2, 'message': f'error processing {filename}', 'error': True})
 
     @after_this_request
     def remove_file(response):
@@ -292,7 +292,7 @@ def redraw_paragraph_image_file():
         tool.config = config_json
         tool.process_image()
     except Exception as e:
-        return jsonify({'status': -2, 'message': str(e), 'error': True})
+        return jsonify({'status': -2, 'message': f'error processing {filename}', 'error': True})
 
 
     @after_this_request
@@ -328,7 +328,7 @@ def redraw_ordered_image_file():
         tool.config = config_json
         tool.process_image()
     except Exception as e:
-        return jsonify({'status': -2, 'message': str(e), 'error': True})
+        return jsonify({'status': -2, 'message': f'error processing {filename}', 'error': True})
 
     @after_this_request
     def remove_file(response):
