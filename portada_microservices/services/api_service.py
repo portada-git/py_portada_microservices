@@ -192,10 +192,14 @@ def dewarp_image_file():
     else:
         return message, status
 
-    tool = DewarpTools()
-    tool.image_path = filename
-    tool.dewarp_image()
-    tool.save_image()
+    try:
+        tool = DewarpTools()
+        tool.image_path = filename
+        tool.dewarp_image()
+        tool.save_image()
+    except Exception as e:
+        return e, 500
+
 
     @after_this_request
     def remove_file(response):
@@ -218,12 +222,15 @@ def deskew_image_file():
         filename = message
     else:
         return message, status
+    try:
+        tool = DeskewTool()
+        tool.image_path = filename
+        tool.min_angle = 0.1
+        tool.deskew_image()
+        tool.save_image()
+    except Exception as e:
+        return e, 500
 
-    tool = DeskewTool()
-    tool.image_path = filename
-    tool.min_angle = 0.1
-    tool.deskew_image()
-    tool.save_image()
 
     @after_this_request
     def remove_file(response):
@@ -240,19 +247,22 @@ def test_paragraph_image_file():
     else:
         return message, status
 
-    with open("/etc/.portada_microservices/yolo_config.json") as f:
-        config_json = json.load(f)
+    try:
+        with open("/etc/.portada_microservices/yolo_config.json") as f:
+            config_json = json.load(f)
 
-    tool = PortadaParagraphCutter(layout_model_path=config_json['column_model_path'], paragraph_model_path=config_json['para_model_path'])
-    tool.image_path = filename
-    tool.config = config_json
-    col_boxes = tool.get_columns()
-    annotated_image = PortadaParagraphCutter.draw_annotated_image_by_boxes(col_boxes, tool.image)
+        tool = PortadaParagraphCutter(layout_model_path=config_json['column_model_path'], paragraph_model_path=config_json['para_model_path'])
+        tool.image_path = filename
+        tool.config = config_json
+        col_boxes = tool.get_columns()
+        annotated_image = PortadaParagraphCutter.draw_annotated_image_by_boxes(col_boxes, tool.image)
 
-    file_name = Path(tool.image_path).stem
-    ext = Path(tool.image_path).suffix
-    if len(ext) == 0:
-        ext = ".jpg"
+        file_name = Path(tool.image_path).stem
+        ext = Path(tool.image_path).suffix
+        if len(ext) == 0:
+            ext = ".jpg"
+    except Exception as e:
+        return e, 500
 
     @after_this_request
     def remove_file(response):
@@ -273,13 +283,16 @@ def redraw_paragraph_image_file():
     else:
         return message, status
 
-    with open("/etc/.portada_microservices/yolo_config.json") as f:
-        config_json = json.load(f)
+    try:
+        with open("/etc/.portada_microservices/yolo_config.json") as f:
+            config_json = json.load(f)
 
-    tool = PortadaParagraphCutter(layout_model_path=config_json['column_model_path'], paragraph_model_path=config_json['para_model_path'])
-    tool.image_path = filename
-    tool.config = config_json
-    tool.process_image()
+        tool = PortadaParagraphCutter(layout_model_path=config_json['column_model_path'], paragraph_model_path=config_json['para_model_path'])
+        tool.image_path = filename
+        tool.config = config_json
+        tool.process_image()
+    except Exception as e:
+        return e, 500
 
     @after_this_request
     def remove_file(response):
@@ -305,13 +318,16 @@ def redraw_ordered_image_file():
 
     team = request.form.get("team")
 
-    with open("/etc/.portada_microservices/" + team + "/arc_config.json") as f:
-        config_json = json.load(f)
+    try:
+        with open("/etc/.portada_microservices/" + team + "/arc_config.json") as f:
+            config_json = json.load(f)
 
-    tool = PortadaRedrawImageForOcr()
-    tool.image_path = filename
-    tool.config = config_json
-    tool.process_image()
+        tool = PortadaRedrawImageForOcr()
+        tool.image_path = filename
+        tool.config = config_json
+        tool.process_image()
+    except Exception as e:
+        return e, 500
 
     @after_this_request
     def remove_file(response):
