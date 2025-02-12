@@ -245,7 +245,7 @@ def test_paragraph_image_file():
     if status < 400:
         filename = message
     else:
-        return message, status
+        return jsonify({'status': -1, 'message': message, 'error': True, 'http_status':status})
 
     try:
         with open("/etc/.portada_microservices/yolo_config.json") as f:
@@ -262,7 +262,7 @@ def test_paragraph_image_file():
         if len(ext) == 0:
             ext = ".jpg"
     except Exception as e:
-        return str(e), 500
+        return jsonify({'status': -2, 'message': str(e), 'error': True})
 
     @after_this_request
     def remove_file(response):
@@ -281,7 +281,7 @@ def redraw_paragraph_image_file():
     if status < 400:
         filename = message
     else:
-        return message, status
+        return jsonify({'status': -1, 'message': message, 'error': True, 'http_status':status})
 
     try:
         with open("/etc/.portada_microservices/yolo_config.json") as f:
@@ -292,7 +292,8 @@ def redraw_paragraph_image_file():
         tool.config = config_json
         tool.process_image()
     except Exception as e:
-        return str(e), 500
+        return jsonify({'status': -2, 'message': str(e), 'error': True})
+
 
     @after_this_request
     def remove_file(response):
@@ -314,7 +315,7 @@ def redraw_ordered_image_file():
     if status < 400:
         filename = message
     else:
-        return message, status
+        return jsonify({'status': -1, 'message': message, 'error': True, 'http_status':status})
 
     team = request.form.get("team")
 
@@ -327,7 +328,7 @@ def redraw_ordered_image_file():
         tool.config = config_json
         tool.process_image()
     except Exception as e:
-        return str(e), 500
+        return jsonify({'status': -2, 'message': str(e), 'error': True})
 
     @after_this_request
     def remove_file(response):
