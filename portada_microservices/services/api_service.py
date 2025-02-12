@@ -198,7 +198,7 @@ def dewarp_image_file():
         tool.dewarp_image()
         tool.save_image()
     except Exception as e:
-        return e, 500
+        return str(e), 500
 
 
     @after_this_request
@@ -229,7 +229,7 @@ def deskew_image_file():
         tool.deskew_image()
         tool.save_image()
     except Exception as e:
-        return e, 500
+        return str(e), 500
 
 
     @after_this_request
@@ -262,7 +262,7 @@ def test_paragraph_image_file():
         if len(ext) == 0:
             ext = ".jpg"
     except Exception as e:
-        return e, 500
+        return str(e), 500
 
     @after_this_request
     def remove_file(response):
@@ -292,7 +292,7 @@ def redraw_paragraph_image_file():
         tool.config = config_json
         tool.process_image()
     except Exception as e:
-        return e, 500
+        return str(e), 500
 
     @after_this_request
     def remove_file(response):
@@ -327,7 +327,7 @@ def redraw_ordered_image_file():
         tool.config = config_json
         tool.process_image()
     except Exception as e:
-        return e, 500
+        return str(e), 500
 
     @after_this_request
     def remove_file(response):
