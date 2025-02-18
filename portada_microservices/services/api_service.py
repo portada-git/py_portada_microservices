@@ -171,7 +171,7 @@ def testUploadImage():
     """
     message, extension, status = __save_uploaded_file()
     if status >= 400:
-        return jsonfy(message), status
+        return jsonify(message), status
 
     @after_this_request
     def remove_file(response):
