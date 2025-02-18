@@ -171,7 +171,7 @@ def testUploadImage():
     """
     message, extension, status = __save_uploaded_file()
     if status >= 400:
-        return message, status
+        return jsonfy(message), status
 
     @after_this_request
     def remove_file(response):
@@ -190,7 +190,7 @@ def dewarp_image_file():
     if status < 400:
         filename = message
     else:
-        return message, status
+        return jsonify(message), status
 
     try:
         tool = DewarpTools()
@@ -221,7 +221,7 @@ def deskew_image_file():
     if status < 400:
         filename = message
     else:
-        return message, status
+        return jsonify(message), status
     try:
         tool = DeskewTool()
         tool.image_path = filename
@@ -408,10 +408,10 @@ def __save_uploaded_file():
         file = request.files['image']
         filename = secure_filename(file.filename)
     except Exception as e:
-        return jsonify({'error': 'No image found with the \'image\' key'}), 'error', 400
+        return {'error': 'No image found with the \'image\' key'}, 'error', 400
 
     if not allowed_file(file.filename):
-        return jsonify({'error': 'This file type is not allowed'}), 'error', 400
+        return {'error': 'This file type is not allowed'}, 'error', 400
 
     try:
         extension = filename.rsplit('.', 1)[1].lower()
