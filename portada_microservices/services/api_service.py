@@ -274,9 +274,7 @@ def test_paragraph_image_file():
     ret = [(dict(file_name=file_name, extension=ext, count="1" ,image=base64.b64encode(jpg_image).decode('utf-8')))]
     return jsonify({'status': 0, 'message': 'annotated image generated', 'images': ret})
 
-
-@app.route("/redrawParagraphImageFile", methods=['POST', 'PUT'])
-def redraw_paragraph_image_file():
+def __redraw_fragment_image_file(action_type):
     message, extension, status = __save_uploaded_file()
     if status < 400:
         filename = message
@@ -290,10 +288,9 @@ def redraw_paragraph_image_file():
         tool = PortadaParagraphCutter(layout_model_path=config_json['column_model_path'], paragraph_model_path=config_json['para_model_path'])
         tool.image_path = filename
         tool.config = config_json
-        tool.process_image()
+        tool.process_image(action_type)
     except Exception as e:
         return jsonify({'status': -2, 'message': f'error processing {filename}', 'error': True})
-
 
     @after_this_request
     def remove_file(response):
@@ -306,6 +303,22 @@ def redraw_paragraph_image_file():
         ret.append(dict(file_name=ib["file_name"], extension=ib["extension"], count=ib["count"],
                         image=base64.b64encode(ib["image"]).decode('utf-8')))
     return jsonify({'status': 0, 'message': 'image blocks generated', 'images': ret})
+
+
+@app.route("/redrawParagraphImageFile", methods=['POST', 'PUT'])
+def redraw_paragraph_image_file():
+    resp = __redraw_fragment_image_file('P')
+    return resp
+
+@app.route("/redrawColumnImageFile", methods=['POST', 'PUT'])
+def redraw_column_image_file():
+    resp = __redraw_fragment_image_file('C')
+    return resp
+
+@app.route("/redrawBlockImageFile", methods=['POST', 'PUT'])
+def redraw_block_image_file():
+    resp = __redraw_fragment_image_file('B')
+    return resp
 
 
 @app.route("/pr/redrawOrderedImageFile", methods=['POST', 'PUT'])
