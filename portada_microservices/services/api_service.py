@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from flask import Flask, jsonify, request, send_file, after_this_request, session
 from flask_reuploads import UploadSet, IMAGES, configure_uploads
+from huggingface_hub.hf_api import api
 from numpy.distutils.command.config import config
 from py_portada_image.deskew_tools import DeskewTool
 from py_portada_image.dewarp_tools import DewarpTools
@@ -18,6 +19,8 @@ import json
 import uuid
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from py_openai_extractor import AutonewsExtractorAdaptor, AutonewsExtractorAdaptorBuilder
+from py_portada_order_blocks import decrypt
 
 
 def __add_public_key(team, public_key):
@@ -354,6 +357,27 @@ def redraw_ordered_image_file():
         ret.append(dict(file_name=ib["file_name"], extension=ib["extension"], count=ib["count"],
                         image=base64.b64encode(ib["image"]).decode('utf-8')))
     return jsonify({'status': 0, 'message': 'image blocks generated', 'images': ret})
+
+@app.route("/pr/extract_with_openai", methods=['POST', 'PUT'])
+# @verify_signature
+def extract_with_openai():
+    params = request.get_json()
+    team = params["team"]
+    config_json = params["config_json"]
+    field_definitions= params["field_definitions"]
+    text = params["text"]
+    with open("/etc/.portada_microservices/" + team + "/project_access.properties") as f:
+            properties = f.read().split("\n")
+    prop_json = {}
+    for property in properties:
+        a_prop = property.split("=")
+        if len(a_prop)==2:
+            prop_json[a_prop[0].strip()] = a_prop[1].strip()
+    decrypt_key = os.environ['ADATROP_TERCES']
+    api_key = decrypt.decrypt_file_openssl(prop_json['openai_key_path'], decrypt_key)
+    extractor = AutonewsExtractorAdaptorBuilder().with_api_key(api_key).with_config_json(config_json).with_field_definitions(field_definitions).build()
+    return jsonify(extractor.extract_data(text))
+
 
 
 # @app.route('/stop', methods=['POST'])

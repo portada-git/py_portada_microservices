@@ -5,6 +5,7 @@ import requests
 import os
 
 from cv2.gapi.ie import params
+from flask import jsonify
 
 
 class RequestConfig(object):
@@ -113,3 +114,20 @@ def test_yolo_paragraph_process(input_path:str, output_path=''):
         raise RuntimeError("This Microservice is not available")
     else:
         raise RuntimeError("ERROR")
+
+def extract_with_openai(team:str, text:str, config_json, field_definitions):
+    extract_url = "{}{}".format(config.url, "pr/extract_with_openai")
+    params = {
+        'team': team,
+        'config_json':config_json,
+        'field_definitions': field_definitions,
+        'text': text
+    }
+    response = requests.post(extract_url, json=params)
+    if response.status_code < 400:
+        return response.json()
+    elif response.status_code == 404:
+        raise RuntimeError("This Microservice is not available")
+    else:
+        raise RuntimeError("ERROR")
+
