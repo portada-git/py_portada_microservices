@@ -115,12 +115,11 @@ def test_yolo_paragraph_process(input_path:str, output_path=''):
     else:
         raise RuntimeError("ERROR")
 
-def extract_with_openai(team:str, text:str, config_json, field_definitions):
+def extract_with_openai(team:str, text:str, config_json):
     extract_url = "{}{}".format(config.url, "pr/extract_with_openai")
     params = {
         'team': team,
         'config_json':config_json,
-        'field_definitions': field_definitions,
         'text': text
     }
     response = requests.post(extract_url, json=params)

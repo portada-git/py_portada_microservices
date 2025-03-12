@@ -33,8 +33,11 @@ def __add_public_key(team, public_key):
 def __init():
     global init_properties
 
-    init_properties = dict(
-        line.strip().split('=') for line in open('/etc/.portada_microservices/papi_access.properties'))
+    init_properties = dict()
+    for line in open('/etc/.portada_microservices/papi_access.properties'):
+        if line.strip():
+            k, v = line.strip().split('=')
+            init_properties[k.strip()] = v.strip()
     public_key_base_path = init_properties["publicKeyBasePath"]
     public_key_dir_name = init_properties["publicKeydirName"]
     teams = init_properties["teams"].split(",")
@@ -359,12 +362,11 @@ def redraw_ordered_image_file():
     return jsonify({'status': 0, 'message': 'image blocks generated', 'images': ret})
 
 @app.route("/pr/extract_with_openai", methods=['POST', 'PUT'])
-# @verify_signature
+@verify_signature
 def extract_with_openai():
     params = request.get_json()
     team = params["team"]
     config_json = params["config_json"]
-    field_definitions= params["field_definitions"]
     text = params["text"]
     with open("/etc/.portada_microservices/" + team + "/project_access.properties") as f:
             properties = f.read().split("\n")
@@ -375,7 +377,7 @@ def extract_with_openai():
             prop_json[a_prop[0].strip()] = a_prop[1].strip()
     decrypt_key = os.environ['ADATROP_TERCES']
     api_key = decrypt.decrypt_file_openssl(prop_json['openai_key_path'], decrypt_key)
-    extractor = AutonewsExtractorAdaptorBuilder().with_api_key(api_key).with_config_json(config_json).with_field_definitions(field_definitions).build()
+    extractor = AutonewsExtractorAdaptorBuilder().with_api_key(api_key).with_config_json(config_json).build()
     return jsonify(extractor.extract_data(text))
 
 
