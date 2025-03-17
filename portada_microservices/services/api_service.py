@@ -9,6 +9,7 @@ from flask import Flask, jsonify, request, send_file, after_this_request, sessio
 from flask_reuploads import UploadSet, IMAGES, configure_uploads
 from huggingface_hub.hf_api import api
 from numpy.distutils.command.config import config
+from pip._internal import req
 from py_portada_image.deskew_tools import DeskewTool
 from py_portada_image.dewarp_tools import DewarpTools
 from werkzeug.utils import secure_filename
@@ -139,7 +140,6 @@ def verify_signature(f):
         # Obtenir la signatura de la capçalera HTTP
         signature = request.headers.get('X-Signature')
         if signature is None:
-            team = request.values['team']
             challenge = init_properties['papicli_access_signature_data']
             return jsonify({"error": "Missing signature", "challenge": challenge}), 401
 
@@ -150,8 +150,16 @@ def verify_signature(f):
             return jsonify({"error": "Invalid signature format"}), 400
 
         # Verificar la signatura amb la clau pública
-        challenge =  init_properties['papicli_access_signature_data']
-        if __verify_signature_for_team(signature_bytes,  challenge.encode('utf-8'), request.values['team']):
+        challenge = request.headers.get('X-Challenge')
+        if challenge is None:
+            challenge =  init_properties['papicli_access_signature_data']
+        if "team" in request.values:
+            team = request.values['team']
+        elif "team" in request.json:
+            team = request.json['team']
+        else:
+            return jsonify({"error": "Unknown team"}), 500
+        if __verify_signature_for_team(signature_bytes,  challenge.encode('utf-8'), team):
             # Si la verificació és correcte, continuem
             return f(*args, **kwargs)
         else:
