@@ -8,8 +8,8 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from flask import Flask, jsonify, request, send_file, after_this_request, session
 from flask_reuploads import UploadSet, IMAGES, configure_uploads
 from huggingface_hub.hf_api import api
-from numpy.distutils.command.config import config
-from pip._internal import req
+# from numpy.distutils.command.config import config
+# from pip._internal import req
 from py_portada_image.deskew_tools import DeskewTool
 from py_portada_image.dewarp_tools import DewarpTools
 from werkzeug.utils import secure_filename
@@ -117,19 +117,21 @@ def testAuth(current_user_id):
 
 def __verify_signature_for_team(signature_bytes, data, team):
     verified = False
-
-    for public_key in pkt[team]:
-        if not verified:
-            try:
-                public_key.verify(
-                    signature_bytes,  # La signatura enviada pel client
-                    data,  # Les dades que han estat signades
-                    padding.PKCS1v15(),  # Tipus de padding (PKCS1v15 en aquest cas)
-                    hashes.SHA256()  # Algorisme de hash (ha de coincidir amb el de la signatura)
-                )
-                verified = True
-            except Exception as e:
-                verified = False
+    for i in range(2):
+        for public_key in pkt[team]:
+            if not verified:
+                try:
+                    public_key.verify(
+                        signature_bytes,  # La signatura enviada pel client
+                        data,  # Les dades que han estat signades
+                        padding.PKCS1v15(),  # Tipus de padding (PKCS1v15 en aquest cas)
+                        hashes.SHA256()  # Algorisme de hash (ha de coincidir amb el de la signatura)
+                    )
+                    verified = True
+                except Exception as e:
+                    verified = False
+        if not verified and i==0:
+            reloat_team_keys(team)
 
     return verified
 
