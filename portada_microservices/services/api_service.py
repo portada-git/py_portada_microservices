@@ -62,8 +62,8 @@ def reloat_team_keys(team):
     public_key_dir_path = public_key_base_path + "/" + team + "/" + public_key_dir_name
     if os.path.exists(public_key_dir_path) and os.path.isdir(public_key_dir_path):
         pkt[team] = []
-        for publickey_file in os.listdir(public_key_base_path + "/" + team + "/" + public_key_dir_name):
-            with open(publickey_file, 'rb') as pem_file:
+        for publickey_file in os.listdir(public_key_dir_path):
+            with open(public_key_dir_path+"/"+publickey_file, 'rb') as pem_file:
                 __add_public_key(team, pem_file.read())
 
 
