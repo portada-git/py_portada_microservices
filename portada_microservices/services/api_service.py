@@ -1,11 +1,11 @@
 import base64
 from functools import wraps
 from pathlib import Path
-from py_extractor_calculators import get_arrival_date_from_publication_date as sm_get_arrival_date_from_publication_date
-from py_extractor_calculators import get_departure_date as sm_get_departure_date
-from py_extractor_calculators import get_duration_value as sm_get_duration_value
-from py_extractor_calculators import get_quarantine as sm_get_quarantine
-from py_extractor_calculators import get_port_of_call_list as sm_get_port_of_call_list
+from py_extractor_calculators.sm import get_arrival_date_from_publication_date as sm_get_arrival_date_from_publication_date
+from py_extractor_calculators.sm import get_departure_date as sm_get_departure_date
+from py_extractor_calculators.sm import get_duration_value as sm_get_duration_value
+from py_extractor_calculators.sm import get_quarantine as sm_get_quarantine
+from py_extractor_calculators.sm import get_port_of_call_list as sm_get_port_of_call_list
 
 import cv2
 from cryptography.hazmat.primitives import hashes
