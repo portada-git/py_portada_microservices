@@ -2,6 +2,10 @@ import base64
 from functools import wraps
 from pathlib import Path
 from py_extractor_calculators import get_arrival_date_from_publication_date as sm_get_arrival_date_from_publication_date
+from py_extractor_calculators import get_departure_date as sm_get_departure_date
+from py_extractor_calculators import get_duration_value as sm_get_duration_value
+from py_extractor_calculators import get_quarantine as sm_get_quarantine
+from py_extractor_calculators import get_port_of_call_list as sm_get_port_of_call_list
 
 import cv2
 from cryptography.hazmat.primitives import hashes
@@ -396,6 +400,30 @@ def get_arrival_date_from_publication_date(params):
     jsonp = request.get_json()
     params = jsonp["parameters_by_position"]
     return sm_get_arrival_date_from_publication_date(params)
+
+@app.route("/api/get_departure_date", methods=['POST'])
+def get_departure_date(params):
+    jsonp = request.get_json()
+    params = jsonp["parameters_by_position"]
+    return sm_get_departure_date(params)
+
+@app.route("/api/get_duration_value", methods=['POST'])
+def get_duration_value(params):
+    jsonp = request.get_json()
+    params = jsonp["parameters_by_position"]
+    return sm_get_duration_value(params)
+
+@app.route("/api/get_quarantine", methods=['POST'])
+def get_quarantine(params):
+    jsonp = request.get_json()
+    params = jsonp["parameters_by_position"]
+    return sm_get_quarantine(params)
+
+@app.route("/api/get_port_of_call_list", methods=['POST'])
+def get_port_of_call_list(params):
+    jsonp = request.get_json()
+    params = jsonp["parameters_by_position"]
+    return sm_get_port_of_call_list(params)
 
 # @app.route('/stop', methods=['POST'])
 # def stop_service():
