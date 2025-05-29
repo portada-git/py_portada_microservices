@@ -7,7 +7,8 @@ configparser
 py_portada_order_blocks @ git+https://github.com/portada-git/py_order_text_blocks#egg=py_portada_order_blocks
 cryptography
 py_portada_paragraphs @ git+https://github.com/portada-git/py_portada_paragraphs#egg=py_portada_paragraphs
-py_openai_extractor @ pip install git+https://github.com/portada-git/py_portada_openai_extractor#egg=py_openai_extractor
+py_openai_extractor @ git+https://github.com/portada-git/py_portada_openai_extractor#egg=py_openai_extractor
 numpy
 opencv-python
 huggingface_hub
+py_extractor_calculators @ git+https://github.com/portada-git/py_extractor_calculators

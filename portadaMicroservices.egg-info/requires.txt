@@ -12,3 +12,4 @@ py_openai_extractor@ git+https://github.com/portada-git/py_portada_openai_extrac
 numpy
 opencv-python
 huggingface_hub
+py_extractor_calculators@ git+https://github.com/portada-git/py_extractor_calculators

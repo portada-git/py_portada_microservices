@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: portadaMicroservices
-Version: 0.1.33
+Version: 0.1.34
 Summary: microservices for PortADa project
 Home-page: https://github.com/portada-git/py_portada_microservices
 Author: PortADa team
@@ -21,6 +21,7 @@ Requires-Dist: py_openai_extractor@ git+https://github.com/portada-git/py_portad
 Requires-Dist: numpy
 Requires-Dist: opencv-python
 Requires-Dist: huggingface_hub
+Requires-Dist: py_extractor_calculators@ git+https://github.com/portada-git/py_extractor_calculators
 Dynamic: author
 Dynamic: author-email
 Dynamic: home-page

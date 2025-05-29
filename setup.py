@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='portadaMicroservices',
-    version='0.1.33',
+    version='0.1.34',
     description='microservices for PortADa project',
     author='PortADa team',
     author_email='jcbportada@gmail.com',
@@ -22,7 +22,8 @@ setup(name='portadaMicroservices',
     'py_openai_extractor @ git+https://github.com/portada-git/py_portada_openai_extractor#egg=py_openai_extractor',
     'numpy',
     'opencv-python',
-    'huggingface_hub'
-    ],
+    'huggingface_hub',
+    'py_extractor_calculators @ git+https://github.com/portada-git/py_extractor_calculators'
+],
     python_requires='>=3.9',
     zip_safe=False)

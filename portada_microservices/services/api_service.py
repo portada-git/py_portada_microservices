@@ -1,6 +1,7 @@
 import base64
 from functools import wraps
 from pathlib import Path
+from py_extractor_calculators import get_arrival_date_from_publication_date as sm_get_arrival_date_from_publication_date
 
 import cv2
 from cryptography.hazmat.primitives import hashes
@@ -390,7 +391,11 @@ def extract_with_openai():
     extractor = AutonewsExtractorAdaptorBuilder().with_api_key(api_key).with_config_json(config_json).build()
     return jsonify(extractor.extract_data(text))
 
-
+@app.route("/api/get_arrival_date_from_publication_date", methods=['POST'])
+def get_arrival_date_from_publication_date(params):
+    jsonp = request.get_json()
+    params = jsonp["parameters_by_position"]
+    return sm_get_arrival_date_from_publication_date(params)
 
 # @app.route('/stop', methods=['POST'])
 # def stop_service():
