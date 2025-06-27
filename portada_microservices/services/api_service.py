@@ -27,6 +27,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from py_openai_extractor import AutonewsExtractorAdaptor, AutonewsExtractorAdaptorBuilder
 from py_portada_order_blocks import decrypt
+from py_openai_extractor import QwenOcrProcessor, QwenOcrCorrector
 
 
 def __add_public_key(team, public_key):
@@ -424,6 +425,77 @@ def get_port_of_call_list(params):
     jsonp = request.get_json()
     params = jsonp["parameters_by_position"]
     return jsonify(sm_get_port_of_call_list(params))
+
+@app.route("/pr/fix_ocr_from_text_and_images", methods=['POST', 'PUT'])
+@verify_signature
+def get_fixed_ocr_from_text_and_images():
+    params = request.get_json()
+    team = params["team"]
+    if "config_json" in params:
+        config_json = params["config_json"]
+    else:
+        config_json = {}
+    with open("/etc/.portada_microservices/" + team + "/project_access.properties") as f:
+        properties = f.read().split("\n")
+    prop_json = {}
+    for property in properties:
+        a_prop = property.split("=")
+        if len(a_prop) == 2:
+            prop_json[a_prop[0].strip()] = a_prop[1].strip()
+    decrypt_key = os.environ['ADATROP_TERCES']
+    api_key = decrypt.decrypt_file_openssl(prop_json['qwen_key_path'], decrypt_key)
+    processor = QwenOcrCorrector().set_api_key(api_key)
+    if "model" in config_json:
+        processor.set_model(config_json["model"])
+    if "model_config" in config_json:
+        processor.set_model_config(config_json['model_config'])
+    sm = config_json["system_message"] if "system_message" in config_json else None
+    um = config_json["user_message"] if "user_message" in config_json else None
+    if sm is not None or um is not None:
+        processor.set_messages_config(sm, um)
+    try:
+        text = processor.getFixedOcrText(params["text"], params["images"])
+        ret = {"status": 0, "text": text}
+    except Exception as e:
+        message_error = str(e)
+        ret = {"status": -1, "error_message": message_error}
+    return jsonify(ret)
+
+@app.route("/pr/get_text_from_images", methods=['POST', 'PUT'])
+@verify_signature
+def get_text_from_images():
+    params = request.get_json()
+    team = params["team"]
+    if "config_json" in params:
+        config_json = params["config_json"]
+    else:
+        config_json = {}
+    with open("/etc/.portada_microservices/" + team + "/project_access.properties") as f:
+        properties = f.read().split("\n")
+    prop_json = {}
+    for property in properties:
+        a_prop = property.split("=")
+        if len(a_prop) == 2:
+            prop_json[a_prop[0].strip()] = a_prop[1].strip()
+    decrypt_key = os.environ['ADATROP_TERCES']
+    api_key = decrypt.decrypt_file_openssl(prop_json['qwen_key_path'], decrypt_key)
+    processor = QwenOcrProcessor().set_api_key(api_key)
+    if "model" in config_json:
+        processor.set_model(config_json["model"])
+    if "model_config" in config_json:
+        processor.set_model_config(config_json['model_config'])
+    sm = config_json["system_message"] if "system_message" in config_json else None
+    um = config_json["user_message"] if "user_message" in config_json else None
+    if sm is not None or um is not None:
+        processor.set_messages_config(sm, um)
+    try:
+        text = processor.getTextFromImage(params["images"])
+        ret = {"status": 0, "text": text}
+    except Exception as e:
+        message_error = str(e)
+        ret = {"status": -1, "error_message": message_error}
+    return jsonify(ret)
+
 
 # @app.route('/stop', methods=['POST'])
 # def stop_service():
