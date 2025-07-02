@@ -146,6 +146,8 @@ def verify_signature(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         # Obtenir la signatura de la capçalera HTTP
+        if request.host.startswith("localhost") or request.host.startswith("127.0.0."):
+            return f(*args, **kwargs)
         signature = request.headers.get('X-Signature')
         if signature is None:
             challenge = init_properties['papicli_access_signature_data']
@@ -392,7 +394,13 @@ def extract_with_openai():
         if len(a_prop)==2:
             prop_json[a_prop[0].strip()] = a_prop[1].strip()
     decrypt_key = os.environ['ADATROP_TERCES']
-    api_key = decrypt.decrypt_file_openssl(prop_json['openai_key_path'], decrypt_key)
+    if "api" in config_json:
+        key_path = config_json['api'].lower()+"_key_path"
+    else:
+        key_path = "openai_key_path"
+    if key_path not in prop_json:
+        return jsonify({"status":-10, "json_type": False, "content": None, "error_message": "Error API to extract doesn't exist"})
+    api_key = decrypt.decrypt_file_openssl(prop_json[key_path], decrypt_key)
     extractor = AutonewsExtractorAdaptorBuilder().with_api_key(api_key).with_config_json(config_json).build()
     return jsonify(extractor.extract_data(text))
 
