@@ -6,6 +6,7 @@ from py_extractor_calculators.sm import get_departure_date as sm_get_departure_d
 from py_extractor_calculators.sm import get_duration_value as sm_get_duration_value
 from py_extractor_calculators.sm import get_quarantine as sm_get_quarantine
 from py_extractor_calculators.sm import get_port_of_call_list as sm_get_port_of_call_list
+from py_extractor_calculators import sm
 
 import cv2
 from cryptography.hazmat.primitives import hashes
@@ -405,34 +406,41 @@ def extract_with_openai():
     return jsonify(extractor.extract_data(text))
 
 @app.route("/api/get_arrival_date_from_publication_date", methods=['POST'])
-def get_arrival_date_from_publication_date(params):
+def get_arrival_date_from_publication_date():
     jsonp = request.get_json()
     params = jsonp["parameters_by_position"]
     return jsonify(sm_get_arrival_date_from_publication_date(params))
 
 @app.route("/api/get_departure_date", methods=['POST'])
-def get_departure_date(params):
+def get_departure_date():
     jsonp = request.get_json()
     params = jsonp["parameters_by_position"]
     return jsonify(sm_get_departure_date(params))
 
 @app.route("/api/get_duration_value", methods=['POST'])
-def get_duration_value(params):
+def get_duration_value():
     jsonp = request.get_json()
     params = jsonp["parameters_by_position"]
     return jsonify(sm_get_duration_value(params))
 
 @app.route("/api/get_quarantine", methods=['POST'])
-def get_quarantine(params):
+def get_quarantine():
     jsonp = request.get_json()
     params = jsonp["parameters_by_position"]
     return jsonify(sm_get_quarantine(params))
 
 @app.route("/api/get_port_of_call_list", methods=['POST'])
-def get_port_of_call_list(params):
+def get_port_of_call_list():
     jsonp = request.get_json()
     params = jsonp["parameters_by_position"]
     return jsonify(sm_get_port_of_call_list(params))
+
+@app.route("/api/add_consignee_to_cargo_list", methods=['POST'])
+def add_consignee_to_cargo_list():
+    jsonp = request.get_json()
+    params = jsonp["parameters_by_position"]
+    return jsonify(sm.add_consignee_to_cargo_list(params))
+
 
 @app.route("/pr/fix_ocr_from_text_and_images", methods=['POST', 'PUT'])
 @verify_signature
