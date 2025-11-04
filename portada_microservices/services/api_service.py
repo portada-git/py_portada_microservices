@@ -142,39 +142,50 @@ def __verify_signature_for_team(signature_bytes, data, team):
 
     return verified
 
+def __vs__(f, *args, **kwargs):
+    # Obtenir la signatura de la capçalera HTTP
+    if request.host.startswith("localhost") or request.host.startswith("127.0.0."):
+        return f(*args, **kwargs)
+    signature = request.headers.get('X-Signature')
+    if signature is None:
+        challenge = init_properties['papicli_access_signature_data']
+        return jsonify({"error": "Missing signature", "challenge": challenge}), 401
+
+    # Decodificar la signatura en base64
+    try:
+        signature_bytes = base64.b64decode(signature)
+    except Exception as e:
+        return jsonify({"error": "Invalid signature format"}), 400
+
+    # Verificar la signatura amb la clau pública
+    challenge = request.headers.get('X-Challenge')
+    if challenge is None:
+        challenge = init_properties['papicli_access_signature_data']
+    if "team" in request.values:
+        team = request.values['team']
+    elif "team" in request.json:
+        team = request.json['team']
+    else:
+        return jsonify({"error": "Unknown team"}), 500
+    if __verify_signature_for_team(signature_bytes, challenge.encode('utf-8'), team):
+        # Si la verificació és correcte, continuem
+        return f(*args, **kwargs)
+    else:
+        return jsonify({"error": "forbidden resource"}), 403
+
+def verify_signature_or_api(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if "config_json" in request.json and "api_key" in request.json["config_json"]:
+            return f(*args, **kwargs)
+        else:
+            return __vs__(f, *args, **kwargs)
+    return decorated
 
 def verify_signature(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        # Obtenir la signatura de la capçalera HTTP
-        if request.host.startswith("localhost") or request.host.startswith("127.0.0."):
-            return f(*args, **kwargs)
-        signature = request.headers.get('X-Signature')
-        if signature is None:
-            challenge = init_properties['papicli_access_signature_data']
-            return jsonify({"error": "Missing signature", "challenge": challenge}), 401
-
-        # Decodificar la signatura en base64
-        try:
-            signature_bytes = base64.b64decode(signature)
-        except Exception as e:
-            return jsonify({"error": "Invalid signature format"}), 400
-
-        # Verificar la signatura amb la clau pública
-        challenge = request.headers.get('X-Challenge')
-        if challenge is None:
-            challenge =  init_properties['papicli_access_signature_data']
-        if "team" in request.values:
-            team = request.values['team']
-        elif "team" in request.json:
-            team = request.json['team']
-        else:
-            return jsonify({"error": "Unknown team"}), 500
-        if __verify_signature_for_team(signature_bytes,  challenge.encode('utf-8'), team):
-            # Si la verificació és correcte, continuem
-            return f(*args, **kwargs)
-        else:
-            return jsonify({"error": "forbidden resource"}), 403
+        return __vs__(f, *args, **kwargs)
 
     return decorated
 
@@ -381,27 +392,30 @@ def redraw_ordered_image_file():
     return jsonify({'status': 0, 'message': 'image blocks generated', 'images': ret})
 
 @app.route("/pr/extract_with_openai", methods=['POST', 'PUT'])
-@verify_signature
+@verify_signature_or_api
 def extract_with_openai():
     params = request.get_json()
     team = params["team"]
     config_json = params["config_json"]
     text = params["text"]
-    with open("/etc/.portada_microservices/" + team + "/project_access.properties") as f:
-            properties = f.read().split("\n")
-    prop_json = {}
-    for property in properties:
-        a_prop = property.split("=")
-        if len(a_prop)==2:
-            prop_json[a_prop[0].strip()] = a_prop[1].strip()
-    decrypt_key = os.environ['ADATROP_TERCES']
-    if "api" in config_json:
-        key_path = config_json['api'].lower()+"_key_path"
+    if "api_key" in config_json:
+        api_key = config_json["api_key"]
     else:
-        key_path = "openai_key_path"
-    if key_path not in prop_json:
-        return jsonify({"status":-10, "json_type": False, "content": None, "error_message": "Error API to extract doesn't exist"})
-    api_key = decrypt.decrypt_file_openssl(prop_json[key_path], decrypt_key)
+        with open("/etc/.portada_microservices/" + team + "/project_access.properties") as f:
+                properties = f.read().split("\n")
+        prop_json = {}
+        for property in properties:
+            a_prop = property.split("=")
+            if len(a_prop)==2:
+                prop_json[a_prop[0].strip()] = a_prop[1].strip()
+        decrypt_key = os.environ['ADATROP_TERCES']
+        if "api" in config_json:
+            key_path = config_json['api'].lower()+"_key_path"
+        else:
+            key_path = "openai_key_path"
+        if key_path not in prop_json:
+            return jsonify({"status":-10, "json_type": False, "content": None, "error_message": "Error API to extract doesn't exist"})
+        api_key = decrypt.decrypt_file_openssl(prop_json[key_path], decrypt_key)
     extractor = AutonewsExtractorAdaptorBuilder().with_api_key(api_key).with_config_json(config_json).build()
     return jsonify(extractor.extract_data(text))
 
