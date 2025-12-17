@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from flask import Flask, jsonify, request, send_file, after_this_request, session
 from flask_reuploads import UploadSet, IMAGES, configure_uploads
 from huggingface_hub.hf_api import api
+from py_openai_extractor.ocr_corrector import GptOcrCorrector
 # from numpy.distutils.command.config import config
 # from pip._internal import req
 from py_portada_image.deskew_tools import DeskewTool
@@ -461,6 +462,11 @@ def add_consignee_to_cargo_list():
 def get_fixed_ocr_from_text_and_images():
     params = request.get_json()
     team = params["team"]
+    if "ai_platform" in params:
+        pmodel = params["ai_platform"]
+    else:
+        pmodel = "openai"
+    key_path = f"{pmodel}_key_path"
     if "config_json" in params:
         config_json = params["config_json"]
     else:
@@ -473,8 +479,12 @@ def get_fixed_ocr_from_text_and_images():
         if len(a_prop) == 2:
             prop_json[a_prop[0].strip()] = a_prop[1].strip()
     decrypt_key = os.environ['ADATROP_TERCES']
-    api_key = decrypt.decrypt_file_openssl(prop_json['qwen_key_path'], decrypt_key)
-    processor = QwenOcrCorrector().set_api_key(api_key)
+    api_key = decrypt.decrypt_file_openssl(prop_json[key_path], decrypt_key)
+    if pmodel == "openai":
+        processor = GptOcrCorrector().set_api_key(api_key)
+    else:
+        processor = QwenOcrCorrector().set_api_key(api_key)
+
     if "model" in config_json:
         processor.set_model(config_json["model"])
     if "model_config" in config_json:
