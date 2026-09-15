@@ -268,13 +268,13 @@ def deskew_image_file():
     except Exception as e:
         return str(e), 500
 
-
     @after_this_request
     def remove_file(response):
         __remove_file(filename)
         return response
 
     return send_file(filename, mimetype='image/' + extension)
+
 
 @app.route("/testParagraphImageFile", methods=['POST', 'PUT'])
 def test_paragraph_image_file():
